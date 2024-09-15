@@ -1,0 +1,28 @@
+sarcasm_df.reset_index(drop = True, inplace = True)
+corpus = [sarcasm_df['comment'][i] for i in range( len(sarcasm_df))]
+
+voc_size=5000
+
+onehot_=[one_hot(words,voc_size)for words in corpus]
+
+max_sent_length = 20
+
+embedded_docs=pad_sequences(onehot_,padding='pre',maxlen=max_sent_length)
+
+embedding_vector_features=40
+
+X_final=np.array(embedded_docs)
+y_final=np.array(sarcasm_df['label'])
+
+X_train_lstm, X_test_lstm, y_train_lstm, y_test_lstm = train_test_split(X_final, y_final, test_size=0.33, random_state=42)
+
+lstm_model=Sequential()
+lstm_model.add(Embedding(voc_size,embedding_vector_features,input_length=max_sent_length))
+lstm_model.add(Dropout(0.3))
+lstm_model.add(Bidirectional(LSTM(100)))
+lstm_model.add(Dropout(0.3))
+lstm_model.add(Flatten())
+lstm_model.add(Dense(1,activation='sigmoid'))
+lstm_model.compile(loss='binary_crossentropy',optimizer='adam',metrics=['accuracy'])
+
+lstm_model.fit(X_train_lstm,y_train_lstm,validation_data=(X_test_lstm,y_test_lstm),epochs=10,batch_size=64)

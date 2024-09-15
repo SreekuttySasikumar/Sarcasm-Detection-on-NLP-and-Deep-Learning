@@ -1,0 +1,128 @@
+plt.figure(figsize=(5,5))
+colors = ["#3498db", "#e74c3c"]
+ax = sns.countplot(x='label',  data= sarcasm_df, palette=colors)
+ax.set(title = "Distribution of Classes", xlabel="Sarcasm Status", ylabel = "Total Count")
+total = float(len(sarcasm_df ))
+for p in ax.patches:
+    height = p.get_height()
+    ax.text(p.get_x()+p.get_width()/2.,
+            height + 3,
+            '{:1.1f}%'.format((height/total)*100),
+            ha="center")
+plt.show()
+
+# Distribution of the lenth of Sarcastic comments
+sns.boxplot(x= sarcasm_df.loc[sarcasm_df['label'] == 1, 'comment'].str.len()).set(title = 'Length of Sarcastic Comments', xlabel = 'Length')
+sns.despine(offset=10, trim=True)
+plt.show()
+
+# Distribution of the length of Neutral comments
+sns.boxplot(x= sarcasm_df.loc[sarcasm_df['label'] == 0, 'comment'].str.len()).set(title = 'Length of Neutral Comments', xlabel = 'Length')
+sns.despine(offset=10, trim=True)
+plt.show()
+
+sarcasm_df['log_comment'] = sarcasm_df['comment'].apply(lambda text: np.log1p(len(text)))
+sarcasm_df[sarcasm_df['label']==1]['log_comment'].hist(alpha=0.6,label='Sarcastic', color = 'blue')
+sarcasm_df[sarcasm_df['label']==0]['log_comment'].hist(alpha=0.6,label='Non-Sarcastic', color = 'red')
+plt.legend()
+plt.title('Natural Log Length of Comments')
+plt.show()
+
+wordcloud = WordCloud(background_color='black', stopwords=STOPWORDS,
+                      max_words=200, max_font_size=100,
+                      random_state=17, width=800, height=400)
+
+plt.figure(figsize=(12, 12))
+wordcloud.generate(str(sarcasm_df.loc[sarcasm_df['label'] == 1, 'comment']))
+plt.grid(False)  # Corrected line
+plt.imshow(wordcloud)
+plt.show()
+
+# Converting the scores into numpy array
+sarcasm_score = np.array(sarcasm_df.loc[sarcasm_df['label'] == 1]['score'])
+neutral_score = np.array(sarcasm_df.loc[sarcasm_df['label'] == 0]['score'])
+
+# Displaying the distribution of Marital Status in a Pie chart
+labels = ['Sarcastic Score', 'Neutral Score']
+sizes = [3235069, 3725113]
+#colors
+colors = ['#F21F3B', '#1FF257']
+
+plt.rcParams.update({'font.size': 14})
+fig1, ax1 = plt.subplots()
+ax1.pie(sizes, colors = colors, labels=labels, autopct='%1.1f%%', startangle=30)
+ax1.set_title("Scores of Subreddits")
+#draw circle
+centre_circle = plt.Circle((0,0),0.70,fc='white')
+fig = plt.gcf()
+fig.gca().add_artist(centre_circle)
+# Equal aspect ratio ensures that pie is drawn as a circle
+ax1.axis('equal')
+plt.tight_layout()
+plt.show()
+
+#determine whether the length of the sarcastic comments is more than its parent comment.
+sarcasm_comm_len = np.array(sarcasm_df.loc[sarcasm_df['label'] == 1]['comment'].str.len())
+parent_comm_len = np.array(sarcasm_df.loc[sarcasm_df['label'] == 1]['parent_comment'].str.len())
+ratio_len = np.array((sarcasm_df.loc[sarcasm_df['label'] == 1]['comment'].str.len())/(sarcasm_df.loc[sarcasm_df['label'] == 1]['parent_comment'].str.len()))
+
+dataset = pd.DataFrame({'Comment Length': sarcasm_comm_len, 'Parent Comment Length': parent_comm_len, 'Ratio Length': ratio_len}, columns=['Comment Length', 'Parent Comment Length', 'Ratio Length'])
+
+ax = plt.axes()
+sns.scatterplot(data=dataset, x="Comment Length", y="Parent Comment Length",  size=ratio_len)
+ax.set_title("Comparing Sarcastic Comment Length with Parent Comment")
+# control x and y limits
+plt.ylim(0, 12000)
+plt.xlim(0, 800)
+plt.show()
+
+# Getting the top 5 popular subreddits
+sarcasm_df['subreddit'].value_counts()[:5]
+
+top_reddits =['AskReddit', 'politics', 'worldnews', 'leagueoflegends', 'pcmasterrace']
+
+subreddit = pd.DataFrame()
+subreddit['subreddit'] = top_reddits
+subreddit['sarcastic'] = np.nan
+subreddit['natural'] = np.nan
+subreddit['total'] = np.nan
+
+# Calculating the count of Sarcastic and Natural comments for the top 5 subreddits
+for i in range(len(top_reddits)):
+    temp = sarcasm_df.loc[sarcasm_df['subreddit'] == subreddit.subreddit.iloc[i]]
+    length = len(temp)
+    count_sarcastic = len(temp.loc[temp['label'] == 1])
+    subreddit.sarcastic.iloc[i] = count_sarcastic
+    subreddit.natural.iloc[i] = length - count_sarcastic
+    subreddit.total.iloc[i] = length
+# Initialize the matplotlib figure
+f, ax = plt.subplots(figsize=(15, 5))
+# Plot the total comments for the subreddits
+sns.barplot(x="total", y="subreddit", data=subreddit,
+            label="Total", color="b")
+# Plot the total sarcastic comments for the subreddits
+sns.barplot(x="sarcastic", y="subreddit", data=subreddit,
+            label="Sarcastic Comments", color="r")
+ax.legend(ncol=2, loc="lower right", frameon=True)
+ax.set( ylabel="Subreddits",
+       xlabel="Total number of comments")
+sns.despine(left=True, bottom=True)
+
+# Feature Engineering- Extracting the day of a week
+sarcasm_df['created_utc'] = pd.to_datetime(sarcasm_df['created_utc'], format = '%d/%m/%Y %H:%M:%S')
+sarcasm_df['Day of Week'] = sarcasm_df['created_utc'].dt.day_name()
+
+plt.figure(figsize=(10, 5))
+ax = sns.countplot(x='Day of Week', hue='Day of Week', data=sarcasm_df.loc[sarcasm_df['label'] == 1], palette='viridis')
+ax.set(title="Count of sarcastic comments per day", xlabel="Days of the week", ylabel="Total Count")
+
+total = float(len(sarcasm_df))
+for p in ax.patches:
+    height = p.get_height()
+    ax.text(p.get_x() + p.get_width() / 2.,
+            height + 7,
+            '{:1.1f}%'.format((height / total) * 100 * 2),
+            ha="center")
+
+plt.legend(title="Day of Week", loc='upper right', bbox_to_anchor=(1.2, 1))
+plt.show()

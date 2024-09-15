@@ -1,0 +1,19 @@
+#convert uppercase letters to lowercase letters
+sarcasm_df = sarcasm_df.apply(lambda x: x.astype(str).str.lower() if x.name == 'comment' else x)
+
+import string
+!pip install nltk
+import nltk
+from nltk.stem import WordNetLemmatizer
+!pip install nltk
+from nltk.corpus import stopwords
+
+lemmatizer = WordNetLemmatizer()
+lemmatizer = WordNetLemmatizer()
+# Remove punctuation
+sarcasm_df['comment'] = sarcasm_df['comment'].apply(lambda x: ''.join([char for char in x if char not in string.punctuation]))
+
+# Remove numbers
+sarcasm_df['comment'] = sarcasm_df['comment'].str.replace('\d+', '')
+
+sarcasm_df.info()
